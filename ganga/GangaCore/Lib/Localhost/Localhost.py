@@ -55,42 +55,8 @@ class Localhost(IBackend):
         j.backend.batch_submit= 2 (or any number)
         """
         if not self.batch_submit is None:
-            master_input_sandbox = self.master_prepare(masterjobconfig)
-            logger.info("Processing of %s subjobs" % len(subjobconfigs))
-            batch=self.batch_submit
-            for i in range(0,len(subjobconfigs),self.batch_submit):
-                logger.info("submitting %d subjobs to Local backend" % self.batch_submit)
-                for j in range(i,batch):
-                    if j > len(subjobconfigs):
-                        break
-                    if j == len(subjobconfigs):
-                        try:
-                            stripProxy(rjobs[j].info).increment()
-                            break
-                        except IndexError:
-                            logger.info("Processing Complete")
-                            break
-                    fqid = rjobs[j].getFQID('.')
-                    logger.info("submitting job %s to Local backend", fqid)
-                    try:
-                        b = stripProxy(rjobs[j].backend)
-                        rjobs[j].updateStatus('submitting')
-                        if b.submit(subjobconfigs[j], master_input_sandbox):
-                            rjobs[j].updateStatus('submitted')
-                            stripProxy(rjobs[j].info).increment()
-                        else:
-                            if handleError(IncompleteJobSubmissionError(fqid, 'submission failed')):
-                                raise IncompleteJobSubmissionError(fqid, 'submission failed')
-                    except Exception as x:
-                        rjobs[j].updateStatus('new')
-                        if isType(x, GangaException):
-                            logger.error("%s" % x)
-                            log_user_exception(logger, debug=True)
-                        else:
-                            log_user_exception(logger, debug=False)
-                        raise IncompleteJobSubmissionError(fqid, 'submission failed')
-                batch+=self.batch_submit    
-            return 1        
+    
+            return IBackend.master_submit(self, rjobs, subjobconfigs, masterjobconfig, keep_going, self.force_parallel)        
 
         else:
             return IBackend.master_submit(self, rjobs, subjobconfigs, masterjobconfig, keep_going, self.force_parallel)
