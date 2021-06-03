@@ -86,7 +86,7 @@ class Localhost(IBackend):
             pool_size = 2
             pool = Pool(pool_size)
             for sc, sj in zip(subjobconfigs, rjobs):
-                pool.apply_async(batch_submit1, (sc , sj,))
+                pool.apply_async(self.batch_submit1, (sc , sj,))
             
             pool.close()
             pool.join()
