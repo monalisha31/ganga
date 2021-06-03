@@ -83,6 +83,8 @@ class Localhost(IBackend):
         j.backend.batch_submit= 2 (or any number)
         """
         if not self.batch_submit is None:
+            master_input_sandbox = self.master_prepare(masterjobconfig)
+            logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
             pool_size = 2
             pool = Pool(pool_size)
             for sc, sj in zip(subjobconfigs, rjobs):
