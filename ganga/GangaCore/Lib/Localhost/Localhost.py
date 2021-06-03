@@ -6,6 +6,8 @@ import GangaCore.Utility.util
 
 from GangaCore.GPIDev.Lib.File import FileBuffer
 
+from multiprocessing.pool import ThreadPool as Pool
+
 import os
 import os.path
 import re
@@ -49,14 +51,47 @@ class Localhost(IBackend):
     def __init__(self):
         super(Localhost, self).__init__()
         
+    def batch_submit1(self, sc, sj):
+        fqid = sj.getFQID('.')
+        logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
+        try:
+            b = stripProxy(sj.backend)
+            sj.updateStatus('submitting')
+            if b.submit(sc, master_input_sandbox):
+                sj.updateStatus('submitted')
+                    # sj._commit() # PENDING: TEMPORARY DISABLED
+                incomplete = 1
+                stripProxy(sj.info).increment()
+            else:
+                if handleError(IncompleteJobSubmissionError(fqid, 'submission failed')):
+                    raise IncompleteJobSubmissionError(fqid, 'submission failed')
+        except Exception as x:
+            sj.updateStatus('new')
+            if isType(x, GangaException):
+                logger.error("%s" % x)
+                log_user_exception(logger, debug=True)
+            else:
+                log_user_exception(logger, debug=False)
+            raise IncompleteJobSubmissionError(fqid, 'submission failed')
+
+        return 1
+    
+        
     def master_submit(self, rjobs, subjobconfigs, masterjobconfig,keep_going=False):
         """
         Runs the subjobs batch wise. To use the batch submit feature, specify the batch number(batch_submit) before j.submit()
         j.backend.batch_submit= 2 (or any number)
         """
         if not self.batch_submit is None:
+            pool_size = 2
+            pool = Pool(pool_size)
+            for sc, sj in zip(subjobconfigs, rjobs):
+                pool.apply_async(batch_submit1, (sc , sj,))
+            
+            pool.close()
+            pool.join()
     
-            return IBackend.master_submit(self, rjobs, subjobconfigs, masterjobconfig, keep_going, self.force_parallel)        
+            return 1       
 
         else:
             return IBackend.master_submit(self, rjobs, subjobconfigs, masterjobconfig, keep_going, self.force_parallel)
