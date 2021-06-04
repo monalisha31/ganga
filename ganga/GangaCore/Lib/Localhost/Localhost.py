@@ -59,7 +59,7 @@ class Localhost(IBackend):
             sj.updateStatus('submitting')
             if b.submit(sc, master_input_sandbox):
                 sj.updateStatus('submitted')
-         
+                stripProxy(sj.info).increment()
                 return 1
             else:
                 raise IncompleteJobSubmissionError(fqid, 'submission failed')
