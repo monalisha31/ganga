@@ -51,30 +51,24 @@ class Localhost(IBackend):
     def __init__(self):
         super(Localhost, self).__init__()
         
-    def batch_submit1(self, sc, sj):
-        fqid = sj.getFQID('.')
-        logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
+    def batch_submit1(self, b, sj, sc, master_input_sandbox, fqid, logger):
         try:
-            b = stripProxy(sj.backend)
             sj.updateStatus('submitting')
             if b.submit(sc, master_input_sandbox):
-                sj.updateStatus('submitted')
-                    # sj._commit() # PENDING: TEMPORARY DISABLED
-                incomplete = 1
-                stripProxy(sj.info).increment()
+                sj.info.increment()
+                return 1
             else:
-                if handleError(IncompleteJobSubmissionError(fqid, 'submission failed')):
-                    raise IncompleteJobSubmissionError(fqid, 'submission failed')
-        except Exception as x:
-            sj.updateStatus('new')
-            if isType(x, GangaException):
-                logger.error("%s" % x)
-                log_user_exception(logger, debug=True)
-            else:
-                log_user_exception(logger, debug=False)
-            raise IncompleteJobSubmissionError(fqid, 'submission failed')
+                raise IncompleteJobSubmissionError(fqid, 'submission failed')
+        except Exception as err:
+            logger.error("Parallel Job Submission Failed: %s" % err)
+            return 0
 
-        return 1
+    def successfulSubmit1(self, out, sj, incomplete_subjobs):
+        if out == 0:
+            incomplete_subjobs.append(sj.getFQID('.'))
+            sj.updateStatus('new', update_master = False)
+        else:
+            sj.updateStatus('submitted', update_master = False)
     
         
     def master_submit(self, rjobs, subjobconfigs, masterjobconfig,keep_going=False):
@@ -83,12 +77,16 @@ class Localhost(IBackend):
         j.backend.batch_submit= 2 (or any number)
         """
         if not self.batch_submit is None:
+            incomplete = 0
+            incomplete_subjobs = []
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
             pool_size = 2
             pool = Pool(pool_size)
             for sc, sj in zip(subjobconfigs, rjobs):
-                pool.apply_async(self.batch_submit1, (sc , sj,))
+                fqid = sj.getFQID('.')
+                logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
+                pool.apply_async(self.batch_submit1, (b, sj, sc, master_input_sandbox, fqid, logger), callback_func = self.successfulSubmit1, callback_args = (sj, incomplete_subjobs))
             
             pool.close()
             pool.join()
