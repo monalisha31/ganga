@@ -59,7 +59,7 @@ class Localhost(IBackend):
             sj.updateStatus('submitting')
             if b.submit(sc, master_input_sandbox):
                 sj.updateStatus('submitted')
-                sj.info.increment()
+         
                 return 1
             else:
                 raise IncompleteJobSubmissionError(fqid, 'submission failed')
@@ -80,13 +80,13 @@ class Localhost(IBackend):
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
  
-            pool = Pool(processes=2)   
-            for sc, sj in zip(subjobconfigs, rjobs):
-
-                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
             
-            pool.close()
-            pool.join()
+
+            pool = Pool(processes=5)
+            pool.map(self.batch_submit1,(rjobs, subjobconfigs, master_input_sandbox, logger,) )
+            pool.terminate()
+
+
     
             return 1       
 
