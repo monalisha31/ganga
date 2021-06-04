@@ -51,7 +51,10 @@ class Localhost(IBackend):
     def __init__(self):
         super(Localhost, self).__init__()
         
-    def batch_submit1(self, b, sj, sc, master_input_sandbox, fqid, logger):
+    def batch_submit1(self, sj, sc, master_input_sandbox, logger):
+        b = sj.backend
+        fqid = sj.getFQID('.')
+        logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
         try:
             sj.updateStatus('submitting')
             if b.submit(sc, master_input_sandbox):
@@ -79,10 +82,8 @@ class Localhost(IBackend):
             pool_size = 2
             pool = Pool(pool_size)
             for sc, sj in zip(subjobconfigs, rjobs):
-                b = sj.backend
-                fqid = sj.getFQID('.')
-                logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
-                pool.apply_async(self.batch_submit1, (b, sj, sc, master_input_sandbox, fqid, logger,))
+
+                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
             
             pool.close()
             pool.join()
