@@ -7,6 +7,7 @@ import GangaCore.Utility.util
 from GangaCore.GPIDev.Lib.File import FileBuffer
 
 from multiprocessing import Pool
+import multiprocessing
 
 import os
 import os.path
