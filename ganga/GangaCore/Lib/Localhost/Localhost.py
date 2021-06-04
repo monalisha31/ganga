@@ -5,9 +5,10 @@ import GangaCore.Utility.logic
 import GangaCore.Utility.util
 
 from GangaCore.GPIDev.Lib.File import FileBuffer
+from multiprocessing.pool import ThreadPool as Pool
 
-from multiprocessing import Pool
-import multiprocessing
+
+
 
 import os
 import os.path
