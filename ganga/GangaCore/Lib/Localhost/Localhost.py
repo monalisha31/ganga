@@ -52,21 +52,31 @@ class Localhost(IBackend):
     def __init__(self):
         super(Localhost, self).__init__()
         
-    def batch_submit1(self, sj, sc, master_input_sandbox, logger):
-        b = sj.backend
-        fqid = sj.getFQID('.')
-        logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
-        try:
-            sj.updateStatus('submitting')
-            if b.submit(sc, master_input_sandbox):
-                sj.updateStatus('submitted')
-                stripProxy(sj.info).increment()
-                return 1
-            else:
+    def batch_submit1(self, rjobs, subjobconfigs, master_input_sandbox, logger):
+        for sc, sj in zip(subjobconfigs, rjobs):
+
+            fqid = sj.getFQID('.')
+            logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
+            try:
+                b = stripProxy(sj.backend)
+                sj.updateStatus('submitting')
+                if b.submit(sc, master_input_sandbox):
+                    sj.updateStatus('submitted')
+                    # sj._commit() # PENDING: TEMPORARY DISABLED
+                    incomplete = 1
+                    stripProxy(sj.info).increment()
+                else:
+                    if handleError(IncompleteJobSubmissionError(fqid, 'submission failed')):
+                        raise IncompleteJobSubmissionError(fqid, 'submission failed')
+            except Exception as x:
+                sj.updateStatus('new')
+                if isType(x, GangaException):
+                    logger.error("%s" % x)
+                    log_user_exception(logger, debug=True)
+                else:
+                    log_user_exception(logger, debug=False)
                 raise IncompleteJobSubmissionError(fqid, 'submission failed')
-        except Exception as err:
-            logger.error("Parallel Job Submission Failed: %s" % err)
-            return 0
+        return 1 
     def chunks(self, input, n):
     
         for i in range(0, len(input), n):
