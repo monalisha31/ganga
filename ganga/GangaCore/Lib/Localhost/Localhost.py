@@ -87,7 +87,7 @@ class Localhost(IBackend):
                 b = sj.backend
                 fqid = sj.getFQID('.')
                 logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
-                pool.apply_async(self.batch_submit1, (b, sj, sc, master_input_sandbox, fqid, logger), callback_func = self.successfulSubmit1, callback_args = (sj, incomplete_subjobs))
+                pool.apply_async(self.batch_submit1, (b, sj, sc, master_input_sandbox, fqid, logger), callback = self.successfulSubmit1, callback = (sj, incomplete_subjobs))
             
             pool.close()
             pool.join()
