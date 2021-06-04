@@ -80,34 +80,22 @@ class Localhost(IBackend):
         Runs the subjobs batch wise. To use the batch submit feature, specify the batch number(batch_submit) before j.submit()
         j.backend.batch_submit= 2 (or any number)
         """
+        
         if not self.batch_submit is None:
 
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
- 
-            
-
-        
-
-
-	    n_proc=4 
-	
-	    chunked_sj=list(self.chunks(rjobs, int(len(rjobs)/n_proc)+1))
+            n_proc=4 
+            chunked_sj=list(self.chunks(rjobs, int(len(rjobs)/n_proc)+1))
             chunked_sc=list(self.chunks(subjobconfigs, int(len(subjobconfigs)/n_proc)+1))
-    
-	    processes=[] 
-	    for i in range(0,n_proc):
-		
+            processes=[] 
+            for i in range(0,n_proc):
 		p = multiprocessing.Process(target=self.batch_submit1,args=(chunked_sj[i],chunked_sc[i],master_input_sandbox, logger,))
-		processes.append(p)
-		p.start()
-	    for process in processes:
-		process.join()
-
-
-    
-            return 1       
-
+                processes.append(p)
+                p.start()
+            for process in processes:
+                process.join()
+        return 1    
         else:
             return IBackend.master_submit(self, rjobs, subjobconfigs, masterjobconfig, keep_going, self.force_parallel)
 
