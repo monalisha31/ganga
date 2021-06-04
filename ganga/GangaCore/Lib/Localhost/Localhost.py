@@ -66,6 +66,10 @@ class Localhost(IBackend):
         except Exception as err:
             logger.error("Parallel Job Submission Failed: %s" % err)
             return 0
+    def chunks(input, n):
+    
+        for i in range(0, len(input), n):
+            yield input[i:i + n]
 
 
     
@@ -82,11 +86,22 @@ class Localhost(IBackend):
  
             
 
-            pool = Pool(processes=5)
-            for sc, sj in zip(subjobconfigs, rjobs):
-                
-                pool.map(self.batch_submit1,(sj, sc, master_input_sandbox, logger,) )
-            pool.terminate()
+        
+
+
+	        n_proc=4 
+	
+	        chunked_sj=list(self.chunks(rjobs, int(len(rjobs)/n_proc)+1))
+            chunked_sc=list(self.chunks(subjobconfigs, int(len(subjobconfigs)/n_proc)+1))
+    
+	        processes=[] 
+	        for i in range(0,n_proc):
+		
+		        p = multiprocessing.Process(target=self.batch_submit1,args=(chunked_sj[i],chunked_sc[i],master_input_sandbox, logger,))
+		        processes.append(p)
+		        p.start()
+	        for process in processes:
+		        process.join()
 
 
     
