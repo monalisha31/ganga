@@ -67,7 +67,7 @@ class Localhost(IBackend):
         except Exception as err:
             logger.error("Parallel Job Submission Failed: %s" % err)
             return 0
-    def chunks(input, n):
+    def chunks(self, input, n):
     
         for i in range(0, len(input), n):
             yield input[i:i + n]
@@ -85,6 +85,8 @@ class Localhost(IBackend):
 
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
+            len1 = len(rjobs)
+            len2 = len(subjobconfigs)
             n_proc=4 
             chunked_sj=list(self.chunks(rjobs, int(len(rjobs)/n_proc)+1))
             chunked_sc=list(self.chunks(subjobconfigs, int(len(subjobconfigs)/n_proc)+1))
