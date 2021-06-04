@@ -52,35 +52,21 @@ class Localhost(IBackend):
     def __init__(self):
         super(Localhost, self).__init__()
         
-    def batch_submit1(self, rjobs, subjobconfigs, master_input_sandbox, logger):
-        for sc, sj in zip(subjobconfigs, rjobs):
-
-            fqid = sj.getFQID('.')
-            logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
-            try:
-                b = stripProxy(sj.backend)
-                sj.updateStatus('submitting')
-                if b.submit(sc, master_input_sandbox):
-                    sj.updateStatus('submitted')
-                    # sj._commit() # PENDING: TEMPORARY DISABLED
-                    incomplete = 1
-                    stripProxy(sj.info).increment()
-                else:
-                    if handleError(IncompleteJobSubmissionError(fqid, 'submission failed')):
-                        raise IncompleteJobSubmissionError(fqid, 'submission failed')
-            except Exception as x:
-                sj.updateStatus('new')
-                if isType(x, GangaException):
-                    logger.error("%s" % x)
-                    log_user_exception(logger, debug=True)
-                else:
-                    log_user_exception(logger, debug=False)
+    def batch_submit1(self, sj, sc, master_input_sandbox, logger):
+        b = sj.backend
+        fqid = sj.getFQID('.')
+        logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
+        try:
+            sj.updateStatus('submitting')
+            if b.submit(sc, master_input_sandbox):
+                sj.updateStatus('submitted')
+                sj.info.increment()
+                return 1
+            else:
                 raise IncompleteJobSubmissionError(fqid, 'submission failed')
-        return 1 
-    def chunks(self, input, n):
-    
-        for i in range(0, len(input), n):
-            yield input[i:i + n]
+        except Exception as err:
+            logger.error("Parallel Job Submission Failed: %s" % err)
+            return 0
 
 
     
@@ -90,29 +76,23 @@ class Localhost(IBackend):
         Runs the subjobs batch wise. To use the batch submit feature, specify the batch number(batch_submit) before j.submit()
         j.backend.batch_submit= 2 (or any number)
         """
-        
         if not self.batch_submit is None:
 
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
-            len1 = len(rjobs)
-            len2 = len(subjobconfigs)
-            n_proc=4 
-            chunked_sj=list(self.chunks(rjobs, int(len(rjobs)/n_proc)+1))
-            chunked_sc=list(self.chunks(subjobconfigs, int(len(subjobconfigs)/n_proc)+1))
-            processes=[] 
-            for i in range(0,n_proc):
-        
-                p = multiprocessing.Process(target=self.batch_submit1,args=(chunked_sj[i],chunked_sc[i],master_input_sandbox, logger,))
-                processes.append(p)
-                p.start()
-            for process in processes:
-                process.join()
-            return 1  
+            pool_size = self.batch_submit
+            pool = Pool(pool_size)
+            for sc, sj in zip(subjobconfigs, rjobs):
+
+                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
+            
+            pool.close()
+            pool.join()
     
+            return 1       
+
         else:
             return IBackend.master_submit(self, rjobs, subjobconfigs, masterjobconfig, keep_going, self.force_parallel)
-
 
 
     def submit(self, jobconfig, master_input_sandbox):
