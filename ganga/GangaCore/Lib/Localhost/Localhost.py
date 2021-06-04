@@ -55,6 +55,7 @@ class Localhost(IBackend):
         try:
             sj.updateStatus('submitting')
             if b.submit(sc, master_input_sandbox):
+                sj.updateStatus('submitted')
                 sj.info.increment()
                 return 1
             else:
@@ -63,12 +64,7 @@ class Localhost(IBackend):
             logger.error("Parallel Job Submission Failed: %s" % err)
             return 0
 
-    def successfulSubmit1(self, out, sj, incomplete_subjobs):
-        if out == 0:
-            incomplete_subjobs.append(sj.getFQID('.'))
-            sj.updateStatus('new', update_master = False)
-        else:
-            sj.updateStatus('submitted', update_master = False)
+
     
         
     def master_submit(self, rjobs, subjobconfigs, masterjobconfig,keep_going=False):
@@ -77,8 +73,7 @@ class Localhost(IBackend):
         j.backend.batch_submit= 2 (or any number)
         """
         if not self.batch_submit is None:
-            incomplete = 0
-            incomplete_subjobs = []
+
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
             pool_size = 2
@@ -87,7 +82,7 @@ class Localhost(IBackend):
                 b = sj.backend
                 fqid = sj.getFQID('.')
                 logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
-                pool.apply_async(self.batch_submit1, (b, sj, sc, master_input_sandbox, fqid, logger), callback = self.successfulSubmit1, callback = (sj, incomplete_subjobs))
+                pool.apply_async(self.batch_submit1, (b, sj, sc, master_input_sandbox, fqid, logger,))
             
             pool.close()
             pool.join()
