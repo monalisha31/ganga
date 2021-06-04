@@ -96,7 +96,8 @@ class Localhost(IBackend):
                 p.start()
             for process in processes:
                 process.join()
-        return 1    
+            return 1  
+    
         else:
             return IBackend.master_submit(self, rjobs, subjobconfigs, masterjobconfig, keep_going, self.force_parallel)
 
