@@ -83,7 +83,9 @@ class Localhost(IBackend):
             
 
             pool = Pool(processes=5)
-            pool.map(self.batch_submit1,(rjobs, subjobconfigs, master_input_sandbox, logger,) )
+            for sc, sj in zip(subjobconfigs, rjobs):
+                
+                pool.map(self.batch_submit1,(sj, sc, master_input_sandbox, logger,) )
             pool.terminate()
 
 
