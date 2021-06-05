@@ -59,8 +59,9 @@ class Localhost(IBackend):
         try:
             sj.updateStatus('submitting')
             if b.submit(sc, master_input_sandbox):
+                sj.updateStatus('submitted')
                 sj.info.increment()
-                return sj
+                return 1
             else:
                 raise IncompleteJobSubmissionError(fqid, 'submission failed')
         except Exception as err:
@@ -69,10 +70,7 @@ class Localhost(IBackend):
     
 
 
-    def result(self, sj):
-        if not sj is none:
-            sj.updateStatus('submitted')
-            return 1
+
         
         
     def master_submit(self, rjobs, subjobconfigs, masterjobconfig,keep_going=False):
@@ -88,7 +86,7 @@ class Localhost(IBackend):
             pool = mp.Pool(mp.cpu_count())
             for sc, sj in zip(subjobconfigs, rjobs):
 
-                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,),callback=self.result)
+                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
             
             pool.close()
             pool.join()
