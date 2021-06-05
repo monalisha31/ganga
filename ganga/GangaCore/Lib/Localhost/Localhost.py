@@ -81,7 +81,7 @@ class Localhost(IBackend):
 
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
-            pool_size = self.batch_submit
+            pool_size = 2
             pool = Pool(pool_size)
             for sc, sj in zip(subjobconfigs, rjobs):
 
