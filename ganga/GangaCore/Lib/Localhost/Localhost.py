@@ -81,13 +81,14 @@ class Localhost(IBackend):
 
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
+            pool_size = self.batch_submit
+            pool = Pool(pool_size)
+            for sc, sj in zip(subjobconfigs, rjobs):
+
+                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
             
-            
-             
-            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                
-                fs = [executor.submit(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))for sj ,sc in zip(rjobs, subjobconfigs)]
-                concurrent.futures.wait(fs)
+            pool.close()
+            pool.join()
     
             return 1       
 
