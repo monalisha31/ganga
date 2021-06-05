@@ -53,22 +53,21 @@ class Localhost(IBackend):
     def __init__(self):
         super(Localhost, self).__init__()
         
-    def batch_submit1(self, rjobs, subjobconfigs, master_input_sandbox, logger):
-        for sj , sc in zip(rjobs, subjobconfigs):
-            b = sj.backend
-            fqid = sj.getFQID('.')
-            logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
-            try:
-                sj.updateStatus('submitting')
-                if b.submit(sc, master_input_sandbox):
-                    sj.updateStatus('submitted')
-                    sj.info.increment()
-                    return 1
-                else:
-                    raise IncompleteJobSubmissionError(fqid, 'submission failed')
-            except Exception as err:
-                logger.error("Parallel Job Submission Failed: %s" % err)
-                return 0
+    def batch_submit1(self, sj, sc, master_input_sandbox, logger):
+        b = sj.backend
+        fqid = sj.getFQID('.')
+        logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
+        try:
+            sj.updateStatus('submitting')
+            if b.submit(sc, master_input_sandbox):
+                sj.updateStatus('submitted')
+                sj.info.increment()
+                return 1
+            else:
+                raise IncompleteJobSubmissionError(fqid, 'submission failed')
+        except Exception as err:
+            logger.error("Parallel Job Submission Failed: %s" % err)
+            return 0
 
 
     
@@ -87,7 +86,7 @@ class Localhost(IBackend):
              
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
                 
-                fs = [executor.submit(self.batch_submit1, (rjobs, subjobconfigs, master_input_sandbox, logger,))]
+                fs = [executor.submit(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))for sj ,sc in zip(rjobs, subjobconfigs)]
                 concurrent.futures.wait(fs)
     
             return 1       
