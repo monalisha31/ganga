@@ -5,7 +5,7 @@ import GangaCore.Utility.logic
 import GangaCore.Utility.util
 
 from GangaCore.GPIDev.Lib.File import FileBuffer
-from multiprocessing.pool import ThreadPool as Pool
+from multiprocessing import Pool
 
 
 
@@ -53,15 +53,15 @@ class Localhost(IBackend):
     def __init__(self):
         super(Localhost, self).__init__()
         
-    def batch_submit1(self, sj, sc, master_input_sandbox, logger):
-        b = sj.backend
-        fqid = sj.getFQID('.')
-        logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
+    def batch_submit1(self, rjob, subjobconfig, master_input_sandbox, logger):
+        b = rjob.backend
+        fqid = rjob.getFQID('.')
+        logger.info("submitting job %s to %s backend", fqid, getName(rjob.backend))
         try:
-            sj.updateStatus('submitting')
-            if b.submit(sc, master_input_sandbox):
-                sj.updateStatus('submitted')
-                sj.info.increment()
+            rjob.updateStatus('submitting')
+            if b.submit(subjobconfig, master_input_sandbox):
+                rjob.updateStatus('submitted')
+                rjob.info.increment()
                 return 1
             else:
                 raise IncompleteJobSubmissionError(fqid, 'submission failed')
@@ -82,13 +82,12 @@ class Localhost(IBackend):
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
             pool_size = 2
-            pool = Pool(pool_size)
-            for sc, sj in zip(subjobconfigs, rjobs):
-
-                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
+            pool = Pool(processes=2)
             
-            pool.close()
-            pool.join()
+
+            pool.map_async(self.batch_submit1, (rjobs,subjobconfigs , master_input_sandbox, logger,))
+            
+
     
             return 1       
 
