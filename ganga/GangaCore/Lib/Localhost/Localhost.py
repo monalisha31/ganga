@@ -5,7 +5,7 @@ import GangaCore.Utility.logic
 import GangaCore.Utility.util
 
 from GangaCore.GPIDev.Lib.File import FileBuffer
-from multiprocessing.pool import ThreadPool as Pool
+import concurrent.futures
 
 
 
@@ -81,14 +81,11 @@ class Localhost(IBackend):
 
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
-            pool_size = self.batch_submit
-            pool = Pool(pool_size)
-            for sc, sj in zip(subjobconfigs, rjobs):
-
-                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
             
-            pool.close()
-            pool.join()
+         
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                fs = [executor.submit(self.batch_submit1, (sj, sc, master_input_sandbox, logger,)) for sc, sj in zip(subjobconfigs, rjobs)]
+                concurrent.futures.wait(fs)
     
             return 1       
 
