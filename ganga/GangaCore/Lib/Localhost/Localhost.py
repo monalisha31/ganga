@@ -5,7 +5,7 @@ import GangaCore.Utility.logic
 import GangaCore.Utility.util
 
 from GangaCore.GPIDev.Lib.File import FileBuffer
-import concurrent.futures
+from multiprocessing.pool import ThreadPool as Pool
 
 
 
