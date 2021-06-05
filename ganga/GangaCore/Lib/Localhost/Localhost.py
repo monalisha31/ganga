@@ -83,9 +83,9 @@ class Localhost(IBackend):
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
             
             
+            for sc, sj in zip(subjobconfigs, rjobs):   
+                with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
                 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                for sc, sj in zip(subjobconfigs, rjobs):
                     fs = [executor.submit(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))]
                     concurrent.futures.wait(fs)
     
