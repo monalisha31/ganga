@@ -67,8 +67,7 @@ class Localhost(IBackend):
     
     def master_submit(self, rjobs, subjobconfigs, masterjobconfig,keep_going=False):
         """
-        Runs specific number of jobs at a time. To use the batch submit feature, specify the batch number(batch_submit) before j.submit()
-        j.backend.batch_submit= 2 (or any number)
+        Runs a specific number of jobs at a time. 
         """
         if not self.batch_submit is None:
             master_input_sandbox = self.master_prepare(masterjobconfig)
