@@ -7,8 +7,6 @@ import GangaCore.Utility.util
 from GangaCore.GPIDev.Lib.File import FileBuffer
 from multiprocessing.dummy import Pool 
 
-
-
 import os
 import os.path
 import re
@@ -52,7 +50,7 @@ class Localhost(IBackend):
     def __init__(self):
         super(Localhost, self).__init__()
         
-    def batch_submit1(self, sj, sc, master_input_sandbox, logger):
+    def _batch_submit(self, sj, sc, master_input_sandbox, logger):
         b = sj.backend
         fqid = sj.getFQID('.')
         try:
@@ -73,12 +71,11 @@ class Localhost(IBackend):
         j.backend.batch_submit= 2 (or any number)
         """
         if not self.batch_submit is None:
-
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
             pool = ThreadPool(self.batch_submit)
             for sc, sj in zip(subjobconfigs, rjobs):
-                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
+                pool.apply_async(self._batch_submit, (sj, sc, master_input_sandbox, logger,))
             pool.close()
             pool.join()
             return 1       
