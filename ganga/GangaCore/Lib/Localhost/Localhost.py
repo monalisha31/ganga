@@ -73,7 +73,7 @@ class Localhost(IBackend):
         if not self.batch_submit is None:
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
-            pool = ThreadPool(self.batch_submit)
+            pool = Pool(self.batch_submit)
             for sc, sj in zip(subjobconfigs, rjobs):
                 pool.apply_async(self._batch_submit, (sj, sc, master_input_sandbox, logger,))
             pool.close()
