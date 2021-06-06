@@ -5,7 +5,7 @@ import GangaCore.Utility.logic
 import GangaCore.Utility.util
 
 from GangaCore.GPIDev.Lib.File import FileBuffer
-from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing.dummy import Pool 
 
 
 
@@ -44,13 +44,14 @@ class Localhost(IBackend):
                                      'wrapper_pid': SimpleItem(defvalue=-1, protected=1, copyable=0, hidden=1, doc='(internal) process id of the execution wrapper'),
                                      'nice': SimpleItem(defvalue=0, doc='adjust process priority using nice -n command'),
                                      'force_parallel': SimpleItem(defvalue=False, doc='should jobs really be submitted in parallel'),
-                                     'batch_submit': SimpleItem(defvalue=None, typelist=[int, None], doc='Runs a specific number of subjobs at a time')
+                                     'batch_submit': SimpleItem(defvalue=None, typelist=[int, None], doc='Runs a specific number of jobs at a time')
                                      })
     _category = 'backends'
     _name = 'Local'
 
     def __init__(self):
         super(Localhost, self).__init__()
+        
     def batch_submit1(self, sj, sc, master_input_sandbox, logger):
         b = sj.backend
         fqid = sj.getFQID('.')
@@ -66,38 +67,24 @@ class Localhost(IBackend):
             logger.error("Batch Submission Failed: %s" % err)
             return 0
     
-
-
-
-        
-        
     def master_submit(self, rjobs, subjobconfigs, masterjobconfig,keep_going=False):
         """
-        Runs the subjobs batch wise. To use the batch submit feature, specify the batch number(batch_submit) before j.submit()
+        Runs specific number of jobs at a time. To use the batch submit feature, specify the batch number(batch_submit) before j.submit()
         j.backend.batch_submit= 2 (or any number)
         """
         if not self.batch_submit is None:
 
             master_input_sandbox = self.master_prepare(masterjobconfig)
             logger.info("Batch Processing of %s subjobs" % len(subjobconfigs))
-            
             pool = ThreadPool(self.batch_submit)
             for sc, sj in zip(subjobconfigs, rjobs):
-
-
                 pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
-            
             pool.close()
             pool.join()
-    
             return 1       
-
         else:
             return IBackend.master_submit(self, rjobs, subjobconfigs, masterjobconfig, keep_going, self.force_parallel)
         
-
-
-
     def submit(self, jobconfig, master_input_sandbox):
         prepared = self.preparejob(jobconfig, master_input_sandbox)
         self.run(prepared)
