@@ -52,10 +52,8 @@ class Localhost(IBackend):
 
     def __init__(self):
         super(Localhost, self).__init__()
-    def batch_submit1(self, sj, sc, master_input_sandbox, logger):
-        b = sj.backend
-        fqid = sj.getFQID('.')
-        logger.info("submitting job %s to %s backend", fqid, getName(sj.backend))
+    def batch_submit1(self, sj, sc, b, fqid, master_input_sandbox, logger):
+
         try:
             sj.updateStatus('submitting')
             if b.submit(sc, master_input_sandbox):
@@ -65,7 +63,7 @@ class Localhost(IBackend):
             else:
                 raise IncompleteJobSubmissionError(fqid, 'submission failed')
         except Exception as err:
-            logger.error("Parallel Job Submission Failed: %s" % err)
+            logger.error("Batch Submission Failed: %s" % err)
             return 0
     
 
@@ -85,8 +83,10 @@ class Localhost(IBackend):
             
             pool = ThreadPool(self.batch_submit)
             for sc, sj in zip(subjobconfigs, rjobs):
+                b = sj.backend
+                fqid = sj.getFQID('.')
 
-                pool.apply_async(self.batch_submit1, (sj, sc, master_input_sandbox, logger,))
+                pool.apply_async(self.batch_submit1, (sj, sc, b, fqid , master_input_sandbox, logger,))
             
             pool.close()
             pool.join()
